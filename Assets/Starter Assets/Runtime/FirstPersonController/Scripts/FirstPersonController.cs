@@ -43,6 +43,25 @@ namespace StarterAssets
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
 
+		[Header("Wall Run")]
+		public LayerMask WallLayer;
+		private Collider _currentWall;
+		private Collider _lastWallJumpedFrom;
+		public float WallCheckDistance = 1f;
+		public float WallCoyoteTime = 0.5f;
+		public float WallGravity = -2f;
+		public float WallJumpSideForce = 3f;
+		private Vector3 _wallJumpPush;
+		private bool _wallLeft;
+		private bool _wallRight;
+		private bool _isWallRunning;
+		private float _lastWallTime;
+		private bool _hasWallJumped;
+		private bool _wasWallRunning;
+		private RaycastHit _leftWallHit;
+		private RaycastHit _rightWallHit;
+		private Vector3 _lastWallNormal;
+
 		[Header("Cinemachine")]
 		[Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
 		public GameObject CinemachineCameraTarget;
@@ -112,8 +131,9 @@ namespace StarterAssets
 
 		private void Update()
 		{
-			JumpAndGravity();
 			GroundedCheck();
+			WallCheck();
+			JumpAndGravity();
 			Move();
 		}
 
@@ -127,6 +147,52 @@ namespace StarterAssets
 			// set sphere position, with offset
 			Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
 			Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+		}
+
+		private void WallCheck()
+		{
+			_currentWall = null;
+			
+			_wallRight = Physics.Raycast(
+				transform.position,
+				transform.right,
+				out _rightWallHit,
+				WallCheckDistance,
+				WallLayer);
+
+			_wallLeft = Physics.Raycast(
+				transform.position,
+				-transform.right,
+				out _leftWallHit,
+				WallCheckDistance,
+				WallLayer);
+
+			if (_wallRight)
+			{
+				_lastWallNormal = _rightWallHit.normal;
+				_lastWallTime = Time.time;
+				_currentWall = _rightWallHit.collider;
+			}
+
+			if (_wallLeft)
+			{
+				_lastWallNormal = _leftWallHit.normal;
+				_lastWallTime = Time.time;
+				_currentWall = _leftWallHit.collider;
+			}
+
+			_isWallRunning =
+				!Grounded &&
+				_verticalVelocity < 0 &&
+				_input.move.y > 0 &&
+				(_wallLeft || _wallRight);
+
+				if (_isWallRunning && !_wasWallRunning)
+				{
+					_hasWallJumped = false;
+				}
+
+				_wasWallRunning = _isWallRunning;
 		}
 
 		private void CameraRotation()
@@ -195,11 +261,29 @@ namespace StarterAssets
 			}
 
 			// move the player
-			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime + _wallJumpPush * Time.deltaTime);
+			_wallJumpPush = Vector3.Lerp( _wallJumpPush, Vector3.zero, 10f * Time.deltaTime);
 		}
 
 		private void JumpAndGravity()
 		{
+			bool canWallJump =
+				!Grounded &&
+				(Time.time - _lastWallTime <= WallCoyoteTime) && _currentWall != _lastWallJumpedFrom;
+
+			if (_input.jump && canWallJump && !_hasWallJumped)
+			{
+				_verticalVelocity =
+					Mathf.Sqrt(JumpHeight * -2f * Gravity);
+
+				_wallJumpPush = _lastWallNormal * WallJumpSideForce;
+
+				_lastWallTime = -999f;
+				_input.jump = false;
+				_hasWallJumped = true;
+				_lastWallJumpedFrom = _currentWall;
+			}
+			
 			if (Grounded)
 			{
 				// reset the fall timeout timer
@@ -242,7 +326,14 @@ namespace StarterAssets
 			// apply gravity over time if above terminal (multiply by delta time twice to linearly speed up over time)
 			if (_verticalVelocity > _terminalVelocity)
 			{
-				_verticalVelocity += Gravity * Time.deltaTime;
+				if (_isWallRunning)
+				{
+						_verticalVelocity += WallGravity * Time.deltaTime;
+				}
+				else
+				{
+					_verticalVelocity += Gravity * Time.deltaTime;
+				}
 			}
 		}
 
@@ -255,6 +346,15 @@ namespace StarterAssets
 
 		private void OnDrawGizmosSelected()
 		{
+			Gizmos.color = Color.blue;
+			Gizmos.DrawRay(
+				transform.position,
+				transform.right * WallCheckDistance);
+
+			Gizmos.color = Color.red;
+			Gizmos.DrawRay(
+				transform.position,
+				-transform.right * WallCheckDistance);
 			Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
 			Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
 
