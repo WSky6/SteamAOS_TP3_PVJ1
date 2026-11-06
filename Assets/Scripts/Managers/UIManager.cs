@@ -12,6 +12,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject GameOverPanel;
     [SerializeField] private TextMeshProUGUI textMesh;
     [SerializeField] private Slider sliderBar;
+    [SerializeField] private Slider volumeSlider;
+    [SerializeField] private AudioMixer mainMixer;
 
     //referencia healthsystem
     [SerializeField] private HealthSystem healthSystemPlayer;
@@ -30,7 +32,17 @@ public class UIManager : MonoBehaviour
             healthSystemPlayer.OnChangeHealthPlayer += UpdateBar;
         }
 
+        float volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
+
+        mainMixer.SetFloat("MasterVolume", Mathf.Log10(volume) * 20);
+
+        if (volumeSlider != null)
+        {
+            volumeSlider.value = volume;
+        }
     }
+
+    
 
     private void OnDestroy()
     {
@@ -147,12 +159,14 @@ public class UIManager : MonoBehaviour
         QualitySettings.vSyncCount = isEnabled ? 1 : 0;
     }
 
-    [SerializeField] private AudioMixer mainMixer;
-
     public void SetMasterVolume(float sliderValue)
     {
+        Debug.Log("Volumen: " + sliderValue);
         // El AudioMixer usa decibelios (escala logaritmica), no valores lineales
         // Esta formula matematica convierte el valor del slider (0 a 1) a decibelios 
-        mainMixer.SetFloat("MasterVolume", Mathf.Log10(sliderValue) * 20);
+    mainMixer.SetFloat("MasterVolume", Mathf.Log10(sliderValue) * 20);
+
+    PlayerPrefs.SetFloat("MasterVolume", sliderValue);
     }
 }
+
