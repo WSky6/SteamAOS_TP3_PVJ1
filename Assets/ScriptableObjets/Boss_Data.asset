@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   type: 2
   maxHealth: 50
-  hitsToKill: 5
+  hitsToKill: 20
   moveSpeed: 5
   acceleration: 30
   angularSpeed: 540
