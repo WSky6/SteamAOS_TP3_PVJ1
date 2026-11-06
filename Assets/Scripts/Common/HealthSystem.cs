@@ -28,8 +28,6 @@ public class HealthSystem : MonoBehaviour
     private void Awake()
     {
         isDead = false;
-        playerStats.ResetStats();
-        enemyStats.ResetStats();
         rb = GetComponent<Rigidbody>();
         col = GetComponent<Collider>();
         //attack = GetComponent<Attack>();
@@ -62,6 +60,8 @@ public class HealthSystem : MonoBehaviour
 
 
     }
+
+    
     private void Dead()
     {
         isDead = true;
