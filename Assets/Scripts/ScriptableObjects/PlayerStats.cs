@@ -1,19 +1,29 @@
-using UnityEditor.VersionControl;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayerStats", menuName = "Scriptable Objects/PlayerStats")]
+[CreateAssetMenu(
+    fileName = "PlayerStats",
+    menuName = "Scriptable Objects/PlayerStats"
+)]
 public class PlayerStats : ScriptableObject
 {
-    [Header("Estadísticas Base")]
+    [Header("Health")]
     public float maxHealth = 100f;
+
+    [HideInInspector]
     public float currentHealth;
+
+    [Header("Movement")]
     public float moveSpeed = 5f;
-    [Header("Progreso de Partida")]
+    public float sprintSpeed = 8f;
+    public float jumpHeight = 1.2f;
+
+    [Header("Game Progress")]
     public int currentScore;
     public int currentLevel = 1;
 
+    [Header("References")]
     public MeshRenderer skin;
-    public Asset prefab;
+    public GameObject prefab;
 
     public void ResetStats()
     {
