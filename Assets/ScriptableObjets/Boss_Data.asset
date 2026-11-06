@@ -10,23 +10,38 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1f4b99dfe01aecc2f971e7c738faaef2, type: 3}
-  m_Name: Mele Basic
+  m_Name: Boss_Data
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   maxHealth: 50
+  hitsToKill: 5
   moveSpeed: 5
   acceleration: 30
   angularSpeed: 540
-  separationDistance: 3
-  separationStrength: 2.5
+  turnSpeed: 180
+  maxJumpHeight: 1.8
+  jumpDistance: 8
+  jumpTriggerDistance: 1.5
+  jumpSpeed: 9
+  jumpArcHeight: 3.5
+  jumpCooldown: 1.5
   visionRange: 12
   visionAngle: 120
   headScanAngle: 60
   headScanSpeed: 1
   allyAlertRadius: 10
+  alertMemoryTime: 10
   attackRange: 1.8
-  attackAngle: 100
+  attackAngle: 90
   instantKill: 1
   attackDamage: 10
   attackWindup: 0.5
   attackCooldown: 1.5
+  bulletPrefab: {fileID: 0}
+  bulletSpeed: 14
+  bulletDamage: 25
+  shootInterval: 3
+  burstShots: 3
+  burstShotDelay: 0.25
+  burstInterval: 4
+  shootMinDistance: 8
   points: 10

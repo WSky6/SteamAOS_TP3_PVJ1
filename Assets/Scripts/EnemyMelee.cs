@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -16,6 +17,10 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     [Header("Paredes / Visión")]
     [SerializeField] private LayerMask obstacleMask = ~0;
     [SerializeField] private float eyeOffset = 0.5f;
+
+    [Header("Atasco (salta si se queda trabado)")]
+    [SerializeField] private float stuckCheckTime = 0.6f; // cada cuánto revisa si se movió
+    [SerializeField] private float stuckMinMove = 0.25f;  // si se movió menos que esto, está atascado
 
     [Header("Visual")]
     [SerializeField] private Color bodyColor = Color.red;
@@ -36,9 +41,16 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     private Quaternion baseRotation;
     private float scanPhase;
 
-    // Lado por el que cada enemigo se acerca (para no pegarse entre ellos)
-    private float slotAngle;
     private float nextRepath;
+
+    // Salto
+    private bool jumping;
+    private float nextJumpTime;
+    private NavMeshPath testPath;
+
+    // Atasco
+    private Vector3 stuckLastPos;
+    private float stuckNextCheck;
 
     private GameObject coneObj, alertObj;
     private Mesh coneMesh, alertMesh;
@@ -83,7 +95,6 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
         baseRotation = transform.rotation;
         scanPhase = Random.Range(0f, 6.28f); // para que no giren todos sincronizados
-        slotAngle = Random.Range(25f, 60f) * (Random.value < 0.5f ? -1f : 1f);
 
         RemoveOldVisuals();
         PaintBody();
@@ -115,6 +126,14 @@ public class EnemyMelee : MonoBehaviour, IDamageable
                 break;
 
             case State.Chase:
+                if (jumping) break;
+
+                TryJump(dist);
+                if (jumping) break;
+
+                CheckStuck(dist);
+                if (jumping) break;
+
                 ChasePlayer(dist);
                 if (dist <= data.attackRange && Time.time >= nextAttackTime)
                     StartAttack();
@@ -147,25 +166,15 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     {
         if (!agent.isOnNavMesh) return;
 
-        // Actualiza el destino cada 0.15 s para evitar temblores
+        // Actualiza el destino cada 0.1 s para evitar temblores
         if (Time.time < nextRepath) return;
-        nextRepath = Time.time + 0.15f;
+        nextRepath = Time.time + 0.1f;
 
         Vector3 dest = player.position;
 
-        // Lejos: se acerca por su lado asignado. Cerca: va directo al player
+        // Solo se separa un poco si hay otro enemigo pegado y todavía está lejos del player
         if (dist > data.attackRange * 3f)
-        {
-            Vector3 fromPlayer = transform.position - player.position;
-            fromPlayer.y = 0f;
-
-            if (fromPlayer.sqrMagnitude > 0.01f)
-            {
-                Vector3 offset = Quaternion.Euler(0f, slotAngle, 0f)
-                                 * fromPlayer.normalized * data.attackRange * 2f;
-                dest = player.position + offset;
-            }
-        }
+            dest += GetLightSeparation();
 
         if (NavMesh.SamplePosition(dest, out NavMeshHit hit, 2f, NavMesh.AllAreas))
             dest = hit.position;
@@ -175,11 +184,273 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         agent.SetDestination(dest);
     }
 
+    // Empuje suave: solo cuenta a los enemigos que están a menos de 1.5 m
+    Vector3 GetLightSeparation()
+    {
+        const float closeDistance = 1.5f;
+        Vector3 push = Vector3.zero;
+
+        for (int i = 0; i < allEnemies.Count; i++)
+        {
+            EnemyMelee other = allEnemies[i];
+            if (other == this || other.state != State.Chase) continue;
+
+            Vector3 away = transform.position - other.transform.position;
+            away.y = 0f;
+            float d = away.magnitude;
+            if (d > closeDistance || d < 0.01f) continue;
+
+            push += away.normalized * (1f - d / closeDistance);
+        }
+
+        return Vector3.ClampMagnitude(push, 1f) * 1.5f;
+    }
+
+    // ---------------- ATASCO ----------------
+
+    // Si en stuckCheckTime segundos casi no se movió y está lejos del player, salta
+    void CheckStuck(float dist)
+    {
+        if (!agent.isOnNavMesh || agent.isStopped)
+        {
+            ResetStuckTimer();
+            return;
+        }
+
+        if (Time.time < stuckNextCheck) return;
+
+        Vector3 moved = transform.position - stuckLastPos;
+        moved.y = 0f;
+
+        bool stuck = moved.magnitude < stuckMinMove && dist > data.attackRange * 1.5f;
+
+        ResetStuckTimer();
+
+        if (!stuck || Time.time < nextJumpTime) return;
+
+        ForceJump();
+    }
+
+    void ResetStuckTimer()
+    {
+        stuckLastPos = transform.position;
+        stuckNextCheck = Time.time + stuckCheckTime;
+    }
+
+    // Salta hacia el player sin necesitar un obstáculo adelante
+    void ForceJump()
+    {
+        Vector3 toPlayer = player.position - transform.position;
+        toPlayer.y = 0f;
+        if (toPlayer.sqrMagnitude < 0.01f) return;
+        toPlayer.Normalize();
+
+        float[] angles = { 0f, 30f, -30f, 60f, -60f };
+
+        // Primero busca un aterrizaje conectado con el player; si no, uno cualquiera
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int i = 0; i < angles.Length; i++)
+            {
+                Vector3 dir = Quaternion.Euler(0f, angles[i], 0f) * toPlayer;
+                if (TryJumpInDirection(dir, pass == 0)) return;
+            }
+        }
+    }
+
+    // ---------------- SALTO ----------------
+
+    // Salto normal: hay un obstáculo bajo adelante
+    void TryJump(float dist)
+    {
+        if (Time.time < nextJumpTime || !agent.isOnNavMesh) return;
+        if (dist <= data.attackRange * 1.5f) return; // cerca del player no salta
+
+        Vector3 dir = player.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) return;
+        dir.Normalize();
+
+        float footY = transform.position.y - agent.baseOffset;
+        Vector3 lowOrigin = new Vector3(transform.position.x, footY + 0.3f, transform.position.z);
+        Vector3 highOrigin = new Vector3(transform.position.x, footY + data.maxJumpHeight + 0.2f, transform.position.z);
+
+        // Tiene que haber un obstáculo bajo adelante...
+        if (!ObstacleAhead(lowOrigin, dir, data.jumpTriggerDistance)) return;
+
+        // ...pero no tan alto que no se pueda saltar (una pared)
+        if (ObstacleAhead(highOrigin, dir, data.jumpTriggerDistance + 0.5f)) return;
+
+        TryJumpInDirection(dir, true);
+    }
+
+    // Busca un aterrizaje lo más cerca posible del player en esa dirección y salta.
+    // Devuelve true si saltó.
+    bool TryJumpInDirection(Vector3 dir, bool requirePathToPlayer)
+    {
+        float footY = transform.position.y - agent.baseOffset;
+        if (testPath == null) testPath = new NavMeshPath();
+
+        bool havePlayerNav = NavMesh.SamplePosition(player.position, out NavMeshHit playerNav, 3f, NavMesh.AllAreas);
+        if (requirePathToPlayer && !havePlayerNav) return false;
+
+        // Distancia horizontal hasta el player
+        Vector3 toPlayer = player.position - transform.position;
+        toPlayer.y = 0f;
+        float distToPlayer = toPlayer.magnitude;
+
+        // Apunta a caer justo antes del player, sin pasarse del alcance del salto
+        float maxD = Mathf.Min(data.jumpDistance, distToPlayer - data.attackRange * 0.8f);
+        if (maxD < 1.5f) return false;
+
+        float[] factors = { 1f, 0.75f, 0.5f };
+        Vector3 highOrigin = new Vector3(transform.position.x, footY + data.maxJumpHeight + 0.2f, transform.position.z);
+
+        for (int i = 0; i < factors.Length; i++)
+        {
+            float d = maxD * factors[i];
+            if (d < 1.5f) continue;
+
+            Vector3 target = transform.position + dir * d;
+            target.y = footY;
+
+            if (!NavMesh.SamplePosition(target, out NavMeshHit nav, 1f, NavMesh.AllAreas)) continue;
+
+            Vector3 flatMove = nav.position - transform.position;
+            flatMove.y = 0f;
+            if (flatMove.magnitude < d * 0.6f) continue;
+
+            // El aterrizaje tiene que estar conectado con el player
+            if (requirePathToPlayer)
+            {
+                if (!NavMesh.CalculatePath(nav.position, playerNav.position, NavMesh.AllAreas, testPath)) continue;
+                if (testPath.status != NavMeshPathStatus.PathComplete) continue;
+            }
+
+            // Pared: algo más alto que lo que se puede saltar en el camino
+            if (ObstacleAhead(highOrigin, flatMove.normalized, flatMove.magnitude)) continue;
+
+            // El arco del salto no puede atravesar nada
+            Vector3 startPos = transform.position;
+            Vector3 endPos = nav.position + Vector3.up * agent.baseOffset;
+            if (ArcBlocked(startPos, endPos)) continue;
+
+            nextJumpTime = Time.time + data.jumpCooldown;
+            StartCoroutine(JumpTo(nav.position));
+            return true;
+        }
+
+        return false;
+    }
+
+    // Revisa tramo por tramo que el arco no choque con nada
+    bool ArcBlocked(Vector3 start, Vector3 end)
+    {
+        const int steps = 12;
+        Vector3 prev = start;
+
+        for (int i = 1; i <= steps; i++)
+        {
+            float k = (float)i / steps;
+            Vector3 p = Vector3.Lerp(start, end, k);
+            p.y += Mathf.Sin(k * Mathf.PI) * data.jumpArcHeight;
+
+            if (SegmentBlocked(prev, p)) return true;
+            prev = p;
+        }
+        return false;
+    }
+
+    bool SegmentBlocked(Vector3 from, Vector3 to)
+    {
+        Vector3 dir = to - from;
+        float dist = dir.magnitude;
+        if (dist < 0.001f) return false;
+
+        int count = Physics.RaycastNonAlloc(from, dir / dist, hitBuffer, dist,
+                        obstacleMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!IsIgnored(hitBuffer[i].transform, null)) return true;
+        }
+        return false;
+    }
+
+    bool ObstacleAhead(Vector3 origin, Vector3 dir, float distance)
+    {
+        int count = Physics.RaycastNonAlloc(origin, dir, hitBuffer, distance,
+                        obstacleMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!IsIgnored(hitBuffer[i].transform, null)) return true;
+        }
+        return false;
+    }
+
+    IEnumerator JumpTo(Vector3 landing)
+    {
+        jumping = true;
+        float offset = agent.baseOffset;
+        agent.enabled = false;
+
+        Vector3 start = transform.position;
+        Vector3 end = landing + Vector3.up * offset;
+
+        Vector3 flat = end - start;
+        flat.y = 0f;
+        if (flat.sqrMagnitude > 0.001f) transform.rotation = Quaternion.LookRotation(flat);
+
+        float duration = Mathf.Max(0.45f, flat.magnitude / data.jumpSpeed);
+        float t = 0f;
+        bool crashed = false;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            float k = Mathf.Clamp01(t);
+
+            Vector3 p = Vector3.Lerp(start, end, k);
+            p.y += Mathf.Sin(k * Mathf.PI) * data.jumpArcHeight;
+
+            // Seguridad: si choca con algo, corta el salto ahí
+            if (SegmentBlocked(transform.position, p))
+            {
+                crashed = true;
+                break;
+            }
+
+            transform.position = p;
+            yield return null;
+        }
+
+        if (crashed)
+        {
+            // Aterriza en el NavMesh más cercano al punto donde chocó
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                landing = hit.position;
+            else
+                landing = start - Vector3.up * offset;
+        }
+
+        transform.position = landing + Vector3.up * offset;
+        agent.enabled = true;
+        agent.Warp(landing);
+        agent.ResetPath();
+        nextRepath = 0f; // vuelve a perseguir de inmediato
+        ResetStuckTimer();
+        jumping = false;
+    }
+
     // ---------------- ESTADOS ----------------
 
     void SetState(State newState)
     {
         state = newState;
+
+        if (state == State.Chase) ResetStuckTimer();
+
         if (coneObj != null)  coneObj.SetActive(state == State.Idle);
         if (alertObj != null) alertObj.SetActive(state == State.Idle ||
                                   (showAlertAreaAlways && state != State.Dead));
@@ -422,7 +693,8 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     {
         SetState(State.Dead);
         CancelInvoke();
-        agent.enabled = false;
+        StopAllCoroutines();
+        if (agent.enabled) agent.enabled = false;
 
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
