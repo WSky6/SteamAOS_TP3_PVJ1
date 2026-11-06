@@ -14,6 +14,13 @@ public class EnemyBoss : MonoBehaviour, IDamageable
     [SerializeField] private LayerMask obstacleMask = ~0;
     [SerializeField] private float eyeOffset = 0.5f;
 
+    [Header("Círculo de visión")]
+    [SerializeField] private bool showVisionCircle = true;
+    [SerializeField] private bool clipCircleByWalls = false;
+    [SerializeField] private Color circleColor = new Color(1f, 0f, 0f, 0.12f);
+    [SerializeField] private float circleYOffset = -0.95f;
+    [SerializeField] private int circleSegments = 72;
+
     [Header("Visual")]
     [SerializeField] private Color bodyColor = new Color(0.35f, 0f, 0f);
     [SerializeField] private Color bulletColor = new Color(1f, 0.3f, 0f);
@@ -22,6 +29,10 @@ public class EnemyBoss : MonoBehaviour, IDamageable
     private EnemyJumper jumper;
     private Transform player;
     private Renderer bodyRenderer;
+
+    private GameObject circleObj;
+    private Mesh circleMesh;
+    private Vector3[] circleVerts;
 
     private State state = State.Idle;
     private int hits;
@@ -65,6 +76,12 @@ public class EnemyBoss : MonoBehaviour, IDamageable
 
         EnemyUtils.CreateEye(transform);
 
+        if (showVisionCircle)
+        {
+            circleObj = EnemyUtils.CreateFan(transform, "VisionCircle", circleYOffset, circleColor,
+                                             circleSegments, out circleMesh, out circleVerts);
+        }
+
         player = EnemyUtils.Player;
         if (player == null) Debug.LogWarning("EnemyBoss: no encuentro ningún objeto con el tag Player");
 
@@ -91,6 +108,7 @@ public class EnemyBoss : MonoBehaviour, IDamageable
             {
                 state = State.Chase;
                 nextBurstTime = Time.time + 1.5f;
+                if (circleObj != null) circleObj.SetActive(false);
             }
             return;
         }
@@ -111,6 +129,15 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         {
             StartCoroutine(Burst());
         }
+    }
+
+    void LateUpdate()
+    {
+        if (state != State.Idle || circleObj == null || !circleObj.activeSelf) return;
+
+        LayerMask mask = clipCircleByWalls ? obstacleMask : (LayerMask)0;
+        EnemyUtils.UpdateFan(transform, circleMesh, circleVerts, 360f, data.visionRange,
+                             circleSegments, eyeOffset, mask);
     }
 
     // ---------------- MOVIMIENTO ----------------
@@ -238,6 +265,7 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         StopAllCoroutines();
         jumper.StopJumping();
         if (agent.enabled) agent.enabled = false;
+        if (circleObj != null) circleObj.SetActive(false);
 
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
