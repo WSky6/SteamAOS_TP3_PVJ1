@@ -7,6 +7,7 @@ public enum GameState
     Start,
     Playing,
     Paused,
+    Tutorial,
     Victory,
     GameOver,
 }
@@ -94,6 +95,10 @@ public class GameManager2 : MonoBehaviour
                 Time.timeScale = 0f;
                 Debug.Log("<color=yellow>ESTADO: pausa</color>");
                 break;
+            case GameState.Tutorial:
+                Time.timeScale = 0f;
+                Debug.Log("<color=blue>ESTADO: Tutorial</color>");
+                break;
             case GameState.Victory:
                 Time.timeScale = 0f;
                 Debug.Log("<color=cyan>ESTADO: Victoria</color>");
@@ -139,4 +144,17 @@ public class GameManager2 : MonoBehaviour
             ChangeState(GameState.Victory);
         }
     }
+
+    public void ResetGame()
+    {
+        Time.timeScale = 1f;
+
+        enemiesRemaining = totalEnemies;
+
+        ChangeState(GameState.Start);
+
+        Debug.Log("Datos del juego reiniciados");
+    }
+
+    
 }

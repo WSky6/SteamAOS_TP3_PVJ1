@@ -73,6 +73,9 @@ public class UIManager : MonoBehaviour
                 PausePanel.SetActive(true);
                 UnlockCursor();
                 break;
+            case GameState.Tutorial:
+                UnlockCursor();
+                break;
             case GameState.Victory:
                 VictoryPanel.SetActive(true);
                 UnlockCursor();
@@ -167,6 +170,12 @@ public class UIManager : MonoBehaviour
     mainMixer.SetFloat("MasterVolume", Mathf.Log10(sliderValue) * 20);
 
     PlayerPrefs.SetFloat("MasterVolume", sliderValue);
+    }
+
+    public void ReturnToMainMenu(string sceneName)
+    {
+        GameManager2.Instance.ResetGame();
+        SceneManager.LoadScene(sceneName);
     }
 }
 
