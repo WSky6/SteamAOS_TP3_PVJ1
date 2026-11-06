@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f4b99dfe01aecc2f971e7c738faaef2, type: 3}
   m_Name: Boss_Data
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  type: 2
   maxHealth: 50
   hitsToKill: 5
   moveSpeed: 5

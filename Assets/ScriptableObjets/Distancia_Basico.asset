@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f4b99dfe01aecc2f971e7c738faaef2, type: 3}
   m_Name: Distancia_Basico
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  type: 1
   maxHealth: 50
   hitsToKill: 5
   moveSpeed: 5
@@ -24,7 +25,7 @@ MonoBehaviour:
   jumpSpeed: 9
   jumpArcHeight: 3.5
   jumpCooldown: 1.5
-  visionRange: 12
+  visionRange: 60
   visionAngle: 120
   headScanAngle: 60
   headScanSpeed: 1
