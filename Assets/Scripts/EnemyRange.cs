@@ -168,7 +168,12 @@ public class EnemyRanged : MonoBehaviour, IDamageable
     {
         nextShot = Time.time + data.shootInterval;
 
-        Vector3 muzzle = transform.position + Vector3.up * eyeOffset + transform.forward * 0.8f;
+        // La bala sale de la punta del palito acostado
+        EnemyWeapon weapon = GetComponent<EnemyWeapon>();
+        Vector3 muzzle = (weapon != null && weapon.Muzzle != null)
+            ? weapon.Muzzle.position
+            : transform.position + Vector3.up * eyeOffset + transform.forward * 0.8f;
+
         Vector3 dir = (EnemyUtils.PlayerCenter() - muzzle).normalized;
 
         EnemyBullet.Spawn(data.bulletPrefab, muzzle, dir, data.bulletSpeed, data.bulletDamage,
