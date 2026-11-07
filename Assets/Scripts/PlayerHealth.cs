@@ -36,7 +36,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [Header("Game over (lo maneja otro script)")]
     [SerializeField] private UnityEvent onDiedUnityEvent;
 
-    private float health;
+    [SerializeField] private float health;
     private bool dead;
 
     public float Current => health;
@@ -49,7 +49,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     void Awake()
     {
-        health = maxHealth;
+        if (health <= 0f && !dead)
+        {
+            health = maxHealth;
+        }
     }
 
     void Start()
@@ -101,5 +104,17 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         // ========================================================================
         OnDied?.Invoke();
         onDiedUnityEvent?.Invoke();
+    }
+
+    [ContextMenu("Probar Daño (10)")]
+    private void TestDamage()
+    {
+        TakeDamage(10f);
+    }
+
+    [ContextMenu("Probar Curación (10)")]
+    private void TestHeal()
+    {
+        Heal(10f);
     }
 }
