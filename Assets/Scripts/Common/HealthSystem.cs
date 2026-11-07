@@ -1,96 +1,84 @@
-using System;
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 
-public class HealthSystem : MonoBehaviour
+public class HealthSystem : MonoBehaviour, IDamageable
 {
     [Header("Health Settings")]
-
-    [SerializeField] private PlayerStats playerStats;
+    [Tooltip("Plantilla de donde sacamos la vida máxima")]
     [SerializeField] private EnemyStats enemyStats;
-
-
-    [SerializeField] private bool isDead;
-    public bool IsDead
-    {
-        get => isDead;
-
-    }
-
     [SerializeField] private GameObject vfx;
+
+    // ¡Variable local! Cada enemigo tiene su propia vida independientemente de la plantilla
+    private float currentHealth;
+    public bool IsDead { get; private set; } = false;
 
     private Rigidbody rb;
     private Collider col;
-    //private Attack attack;
     private MeshRenderer mesh;
 
-    public event Action<float> OnChangeHealthPlayer;
     private void Awake()
     {
-        isDead = false;
         rb = GetComponent<Rigidbody>();
         col = GetComponent<Collider>();
-        //attack = GetComponent<Attack>();
-        mesh = GetComponent<MeshRenderer>();
+        mesh = GetComponentInChildren<MeshRenderer>();
+
+        if (enemyStats != null)
+        {
+            // Al nacer, copiamos la vida máxima de la plantilla a la variable local
+            currentHealth = enemyStats.maxHealth;
+        }
     }
+
     public void TakeDamage(float amount)
     {
-        if (isDead) return;
+        if (IsDead) return;
 
-        if (gameObject.CompareTag("Player"))
+        currentHealth -= amount;
+        Debug.Log($"{gameObject.name} recibió daño. Vida: {currentHealth}");
+
+        if (currentHealth <= 0f)
         {
-            playerStats.currentHealth -= amount;
-            OnChangeHealthPlayer?.Invoke(playerStats.currentHealth);
-
-            if (playerStats.currentHealth <= 0f)
-            {
-                Dead();
-            }
+            Dead();
         }
-
-        if (gameObject.CompareTag("Character"))
-        {
-            enemyStats.currentHealth -= amount;
-
-            if (enemyStats.currentHealth <= 0f)
-            {
-                Dead();
-            }
-        }
-
-
     }
 
-    
     private void Dead()
     {
-        isDead = true;
+        IsDead = true;
 
-        if (gameObject.CompareTag("Player"))
+        // Evaluamos quién murió gracias a los Tags del Paso 1
+        if (gameObject.CompareTag("Enemy"))
         {
-            GameManager2.Instance.NotifyPlayerDead();
+            GameManager2.Instance.NotifyEnemyDefeat(); // Enemigo normal: descuenta del contador
         }
-        else if (gameObject.CompareTag("Character"))
+        else if (gameObject.CompareTag("Boss"))
         {
-            GameManager2.Instance.NotifyEnemyDefeat();
+            GameManager2.Instance.ChangeState(GameState.Victory); // Jefe: ¡Lanza la victoria directa!
         }
 
-        vfx.SetActive(true);
+        if (vfx != null) vfx.SetActive(true);
         StartCoroutine(DestroyTransition());
-
-        Debug.Log("Character eliminado");
     }
 
     IEnumerator DestroyTransition()
     {
-        col.enabled = false;
-        rb.isKinematic = true;
-        mesh.enabled = false;
-        //attack.enabled = false;
+        if (col != null) col.enabled = false;
+        if (rb != null) rb.isKinematic = true;
+        if (mesh != null) mesh.enabled = false;
+        //
+        // Apagamos el NavMeshAgent para que la IA no tire errores de movimiento al morir
+        NavMeshAgent agent = GetComponent<NavMeshAgent>();
+        if (agent != null) agent.enabled = false;
+
+        // Apagamos los scripts de movimiento y ataque (EnemyMelee, EnemyRange, etc.)
+        MonoBehaviour[] scripts = GetComponents<MonoBehaviour>();
+        foreach (var s in scripts)
+        {
+            if (s != this) s.enabled = false;
+        }
 
         yield return new WaitForSeconds(5f);
-
-        Destroy(this.gameObject);
+        Destroy(gameObject);
     }
-
 }

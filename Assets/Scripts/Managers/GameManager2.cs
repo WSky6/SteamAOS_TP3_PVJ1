@@ -138,11 +138,11 @@ public class GameManager2 : MonoBehaviour
         enemiesRemaining--;
 
         OnEnemyChange?.Invoke(enemiesRemaining);
-
+        /*
         if (enemiesRemaining <= 0)
         {
             ChangeState(GameState.Victory);
-        }
+        }*/
     }
 
     public void ResetGame()

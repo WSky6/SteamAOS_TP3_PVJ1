@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
-public class EnemyMelee : MonoBehaviour, IDamageable
+public class EnemyMelee : MonoBehaviour
 {
     public enum State { Idle, Chase, Attack, Dead }
 
@@ -33,7 +33,7 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
     private NavMeshAgent agent;
     private Transform player;
-    private float health;
+    //private float health;
     private float nextAttackTime;
     private State state = State.Idle;
 
@@ -74,7 +74,7 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
     void Start()
     {
-        health = data.maxHealth;
+        //health = data.maxHealth;
         agent.speed = data.moveSpeed;
         agent.acceleration = data.acceleration;
         agent.angularSpeed = data.angularSpeed;
@@ -682,11 +682,11 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     }
 
     // ---------------- VIDA ----------------
-
+    /*
     public void TakeDamage(float amount)
     {
         if (state == State.Dead) return;
-
+        Debug.LogWarning("Boss recibio Daño");
         health -= amount;
         if (health <= 0f) Die();
     }
@@ -701,7 +701,7 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
         Destroy(gameObject, 0.5f);
-    }
+    }*/
 
     // ---------------- GIZMOS (se ven al seleccionar al enemigo) ----------------
 

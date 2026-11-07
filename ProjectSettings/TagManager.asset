@@ -8,6 +8,8 @@ TagManager:
   - Ground
   - CinemachineTarget
   - SpawnPoint
+  - Enemy
+  - Boss
   layers:
   - Default
   - TransparentFX

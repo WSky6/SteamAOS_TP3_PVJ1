@@ -101,5 +101,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         // ========================================================================
         OnDied?.Invoke();
         onDiedUnityEvent?.Invoke();
+
+        GameManager2.Instance.NotifyPlayerDead();
     }
 }
