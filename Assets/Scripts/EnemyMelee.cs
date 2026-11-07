@@ -649,7 +649,9 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         dir.y = 0f;
         if (dir.sqrMagnitude > 0.001f) transform.rotation = Quaternion.LookRotation(dir);
 
-        // Acá se puede disparar la animación de ataque
+        // El palito hace el movimiento de golpe
+        SendMessage("OnAttackStart", data.attackWindup, SendMessageOptions.DontRequireReceiver);
+
         Invoke(nameof(DealDamage), data.attackWindup);
         Invoke(nameof(EndAttack), data.attackWindup + 0.4f);
     }
