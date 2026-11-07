@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class EnemyRanged : MonoBehaviour, IDamageable
+public class EnemyRanged : MonoBehaviour
 {
     private enum State { Idle, Alert, Dead }
 
@@ -19,7 +19,7 @@ public class EnemyRanged : MonoBehaviour, IDamageable
     [SerializeField] private int coneSegments = 40;
 
     private Transform player;
-    private float health;
+    //private float health;
     private State state = State.Idle;
 
     private Quaternion baseRotation;
@@ -34,7 +34,7 @@ public class EnemyRanged : MonoBehaviour, IDamageable
 
     void Start()
     {
-        health = data.maxHealth;
+        //health = data.maxHealth;
         baseRotation = transform.rotation;
         scanPhase = Random.Range(0f, 6.28f);
 
@@ -191,7 +191,7 @@ public class EnemyRanged : MonoBehaviour, IDamageable
 
     // ---------------- VIDA ----------------
 
-    public void TakeDamage(float amount)
+    /*public void TakeDamage(float amount)
     {
         if (state == State.Dead) return;
 
@@ -207,11 +207,11 @@ public class EnemyRanged : MonoBehaviour, IDamageable
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
         Destroy(gameObject, 0.5f);
-    }
+    }*/
 
     // Para probar sin script de disparo: clic derecho en el título del componente (en Play)
-    [ContextMenu("Test: recibir golpe")]
-    void TestHit() { TakeDamage(data.maxHealth); }
+    /*[ContextMenu("Test: recibir golpe")]
+    void TestHit() { TakeDamage(data.maxHealth); }*/
 
     void OnDrawGizmosSelected()
     {

@@ -4,7 +4,7 @@ using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyJumper))]
-public class EnemyBoss : MonoBehaviour, IDamageable
+public class EnemyBoss : MonoBehaviour
 {
     private enum State { Idle, Chase, Attack, Dead }
 
@@ -227,6 +227,7 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         Debug.Log($"{name} golpea al player (daño {dmg})");
 
         IDamageable target = player.GetComponentInParent<IDamageable>();
+        Debug.LogWarning("$$$$$$$$$ paso por aca $$$$$$");
         if (target != null) target.TakeDamage(dmg);
         else Debug.LogWarning("El player todavía no implementa IDamageable");
     }
@@ -240,6 +241,7 @@ public class EnemyBoss : MonoBehaviour, IDamageable
 
     // ---------------- VIDA (aguanta N golpes) ----------------
 
+    /*
     public void TakeDamage(float amount)
     {
         if (state == State.Dead) return;
@@ -249,7 +251,7 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         StartCoroutine(Flash());
 
         if (hits >= data.hitsToKill) Die();
-    }
+    }*/
 
     IEnumerator Flash()
     {
@@ -261,8 +263,9 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         if (state != State.Dead) bodyRenderer.material.color = bodyColor;
     }
 
+    /*
     void Die()
-    {
+    {   //martin
         state = State.Dead;
         CancelInvoke();
         StopAllCoroutines();
@@ -273,11 +276,15 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
         Destroy(gameObject, 0.5f);
+
+
     }
+    */
+
 
     // Para probar sin script de disparo: clic derecho en el título del componente (en Play)
-    [ContextMenu("Test: recibir golpe")]
-    void TestHit() { TakeDamage(1f); }
+    /*[ContextMenu("Test: recibir golpe")]
+    void TestHit() { TakeDamage(1f); }*/
 
     void OnDrawGizmosSelected()
     {

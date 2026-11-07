@@ -23,7 +23,7 @@ using UnityEngine.InputSystem;
 public class PlayerWeapon : MonoBehaviour
 {
     [Header("Disparo")]
-    [SerializeField] private float damage = 25f;
+    [SerializeField] private float damage = 1f;
     [SerializeField] private float bulletSpeed = 40f;
     [SerializeField] private float fireCooldown = 0.35f;
     [SerializeField] private Color bulletColor = new Color(0.2f, 0.9f, 1f);

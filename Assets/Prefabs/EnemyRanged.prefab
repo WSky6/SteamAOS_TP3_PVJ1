@@ -14,9 +14,10 @@ GameObject:
   - component: {fileID: 977427295238754460}
   - component: {fileID: 5027671869017570039}
   - component: {fileID: 5889180067804911178}
+  - component: {fileID: 2332903084464558812}
   m_Layer: 0
   m_Name: EnemyRanged
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -153,3 +154,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeapon
   kind: 0
   stickColor: {r: 0.45, g: 0.28, b: 0.1, a: 1}
+--- !u!114 &2332903084464558812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3657848692925725688}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 982323ad894e676458ff68b06b35cac8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  enemyStats: {fileID: 11400000, guid: f8d44b70b12c3974088c1dd4f62b0353, type: 2}
+  vfx: {fileID: 0}

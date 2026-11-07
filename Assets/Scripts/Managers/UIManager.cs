@@ -27,10 +27,11 @@ public class UIManager : MonoBehaviour
             GameManager2.Instance.OnEnemyChange += UpdateEnemiesHUD;
         }
 
+        /*
         if (healthSystemPlayer != null)
         {
             healthSystemPlayer.OnChangeHealthPlayer += UpdateBar;
-        }
+        }*/
 
         float volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
 
@@ -52,10 +53,11 @@ public class UIManager : MonoBehaviour
             GameManager2.Instance.OnEnemyChange -= UpdateEnemiesHUD;
         }
 
+        /*
         if (healthSystemPlayer != null)
         {
             healthSystemPlayer.OnChangeHealthPlayer -= UpdateBar;
-        }
+        }*/
     }
 
 
