@@ -16,7 +16,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private AudioMixer mainMixer;
 
     //referencia healthsystem
-    [SerializeField] private HealthSystem healthSystemPlayer;
+    [SerializeField] private PlayerHealth healthSystemPlayer;
     //suscripciones estado y vida jugador
     //on destroy y start
     private void Start()
@@ -27,11 +27,11 @@ public class UIManager : MonoBehaviour
             GameManager2.Instance.OnEnemyChange += UpdateEnemiesHUD;
         }
 
-        /*
+        
         if (healthSystemPlayer != null)
         {
-            healthSystemPlayer.OnChangeHealthPlayer += UpdateBar;
-        }*/
+            healthSystemPlayer.OnHealthChanged += UpdateBar;
+        }
 
         float volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
 
@@ -53,11 +53,11 @@ public class UIManager : MonoBehaviour
             GameManager2.Instance.OnEnemyChange -= UpdateEnemiesHUD;
         }
 
-        /*
+        
         if (healthSystemPlayer != null)
         {
-            healthSystemPlayer.OnChangeHealthPlayer -= UpdateBar;
-        }*/
+            healthSystemPlayer.OnHealthChanged -= UpdateBar;
+        }
     }
 
 
@@ -106,7 +106,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void UpdateBar(float health)
+    private void UpdateBar(float health, float maxHealth)
     {
         if (sliderBar != null)
         {
