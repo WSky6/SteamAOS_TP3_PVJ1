@@ -14,32 +14,65 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Slider sliderBar;
     [SerializeField] private Slider volumeSlider;
     [SerializeField] private AudioMixer mainMixer;
+    [SerializeField] private GameObject tutorialPanel;
+    [SerializeField] private TextMeshProUGUI tutorialText;
+    private bool subscribed;
 
     //referencia healthsystem
     [SerializeField] private HealthSystem healthSystemPlayer;
     //suscripciones estado y vida jugador
     //on destroy y start
+
+    private void OnEnable()
+    {
+        Subscribe();
+    }
+
+    private void OnDisable()
+    {
+        if (GameManager2.Instance != null)
+        {
+            GameManager2.Instance.OnChangeState -= StateChage;
+            GameManager2.Instance.OnEnemyChange -= UpdateEnemiesHUD;
+        }
+        subscribed = false;
+
+        if (healthSystemPlayer != null)
+            healthSystemPlayer.OnChangeHealthPlayer -= UpdateBar;
+    }
+
     private void Start()
     {
+        Subscribe();
+        float volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
+        mainMixer.SetFloat("MasterVolume", Mathf.Log10(Mathf.Max(volume, 0.0001f)) * 20);
+
+        if (volumeSlider != null)
+            volumeSlider.value = volume;
+
+        // Sincronizar con el estado actual por si nos perdimos el evento
+        if (GameManager2.Instance != null)
+            StateChage(GameManager2.Instance.CurrentState);
+    }
+
+    private void Subscribe()
+    {
+        if (subscribed) return;
+
         if (GameManager2.Instance != null)
         {
             GameManager2.Instance.OnChangeState += StateChage;
             GameManager2.Instance.OnEnemyChange += UpdateEnemiesHUD;
+            subscribed = true;
+            Debug.Log("UIManager suscrito a GameManager2 en " + SceneManager.GetActiveScene().name);
+        }
+        else
+        {
+            Debug.LogWarning("UIManager: GameManager2.Instance es null, no se pudo suscribir");
         }
 
         if (healthSystemPlayer != null)
-        {
             healthSystemPlayer.OnChangeHealthPlayer += UpdateBar;
-        }
-
-        float volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
-
-        mainMixer.SetFloat("MasterVolume", Mathf.Log10(volume) * 20);
-
-        if (volumeSlider != null)
-        {
-            volumeSlider.value = volume;
-        }
     }
 
     
@@ -58,9 +91,16 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    
+
 
     private void StateChage(GameState newState)
     {
+
+        if (SceneManager.GetActiveScene().name == "MenuPrincipal")
+        return;
+        Debug.Log("UIManager recibido estado: " + newState);
+  
         if (PausePanel != null) PausePanel.SetActive(false);
 
         VictoryPanel.SetActive(false);
@@ -125,10 +165,15 @@ public class UIManager : MonoBehaviour
     //exit
 
     //toggle panel
-    public void ChangeScene(SceneAsset scene)
+    public void ChangeScene(string sceneName)
     {
-        SceneManager.LoadScene(scene.name);
-        //GameManager2.Instance.
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(sceneName);
+    }
+
+    public void UntogglePause()
+    {
+        GameManager2.Instance.ChangeState(GameState.Playing);
     }
 
     public void TogglePanel(GameObject panel)
@@ -164,18 +209,43 @@ public class UIManager : MonoBehaviour
 
     public void SetMasterVolume(float sliderValue)
     {
-        Debug.Log("Volumen: " + sliderValue);
         // El AudioMixer usa decibelios (escala logaritmica), no valores lineales
         // Esta formula matematica convierte el valor del slider (0 a 1) a decibelios 
-    mainMixer.SetFloat("MasterVolume", Mathf.Log10(sliderValue) * 20);
+        mainMixer.SetFloat("MasterVolume", Mathf.Log10(sliderValue) * 20);
 
     PlayerPrefs.SetFloat("MasterVolume", sliderValue);
     }
 
     public void ReturnToMainMenu(string sceneName)
     {
+        Time.timeScale = 1f;
         GameManager2.Instance.ResetGame();
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
         SceneManager.LoadScene(sceneName);
+    }
+
+    public void ShowHint(TutorialHint hint)
+    {
+
+        if (tutorialPanel != null)
+        {
+            tutorialPanel.SetActive(true);
+        }
+
+        if (tutorialText != null)
+        {
+            tutorialText.text = hint.hintText;
+        }
+    }
+
+    public void HideHint()
+    {
+        if (tutorialPanel != null)
+        {
+            tutorialPanel.SetActive(false);
+            GameManager2.Instance.ChangeState(GameState.Playing);
+        }
     }
 }
 

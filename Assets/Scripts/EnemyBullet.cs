@@ -9,6 +9,7 @@ public class EnemyBullet : MonoBehaviour
     private float radius = 0.15f;
     private float lifeLeft = 6f;
     private Transform shooter;
+    private Color impactColor = Color.yellow;
 
     public static EnemyBullet Spawn(GameObject prefab, Vector3 position, Vector3 direction,
                                     float speed, float damage, Color color, Transform shooter)
@@ -41,6 +42,7 @@ public class EnemyBullet : MonoBehaviour
         b.speed = speed;
         b.damage = damage;
         b.shooter = shooter;
+        b.impactColor = color;
         return b;
     }
 
@@ -80,14 +82,30 @@ public class EnemyBullet : MonoBehaviour
 
         if (bestIndex >= 0)
         {
-            Transform hit = buf[bestIndex].transform;
+            RaycastHit h = buf[bestIndex];
+            bool hitPlayer = IsPlayer(h.transform);
 
-            if (IsPlayer(hit))
+            if (hitPlayer)
             {
-                IDamageable d = hit.GetComponentInParent<IDamageable>();
-                if (d != null) d.TakeDamage(damage);
-                else Debug.LogWarning("La bala le pegó al player, pero no tiene IDamageable");
+                // Un disparo enemigo le saca 1/3 de la vida al player (ver PlayerHealth)
+                PlayerHealth ph = h.transform.GetComponentInParent<PlayerHealth>();
+                if (ph != null)
+                {
+                    ph.TakeShot();
+                }
+                else
+                {
+                    IDamageable d = h.transform.GetComponentInParent<IDamageable>();
+                    if (d != null) d.TakeDamage(damage);
+                    else Debug.LogWarning("La bala le pegó al player, pero no tiene PlayerHealth ni IDamageable");
+                }
             }
+
+            // Explosión de chispas en el punto de impacto
+            Vector3 point = h.distance > 0f ? h.point : transform.position;
+            Vector3 normal = h.normal.sqrMagnitude > 0.01f ? h.normal : -transform.forward;
+            BulletImpact.Spawn(point, normal, hitPlayer ? new Color(1f, 0.2f, 0.2f) : impactColor,
+                               hitPlayer ? 22 : 16);
 
             Destroy(gameObject); // pared o player
             return;

@@ -6,9 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyMelee : MonoBehaviour, IDamageable
 {
-    public enum State { Idle, Chase, Attack, Dead }
-
-    // Lista de todos los enemigos vivos (para avisarse entre ellos)
+    public enum State { Idle, Patrol, Chase, Attack, Dead }
     static readonly List<EnemyMelee> allEnemies = new List<EnemyMelee>();
     static readonly RaycastHit[] hitBuffer = new RaycastHit[16];
 
@@ -19,8 +17,17 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     [SerializeField] private float eyeOffset = 0.5f;
 
     [Header("Atasco (salta si se queda trabado)")]
-    [SerializeField] private float stuckCheckTime = 0.6f; // cada cuánto revisa si se movió
-    [SerializeField] private float stuckMinMove = 0.25f;  // si se movió menos que esto, está atascado
+    [SerializeField] private float stuckCheckTime = 0.6f;
+    [SerializeField] private float stuckMinMove = 0.25f;
+
+    [Header("Patrulla")]
+    [Tooltip("Puntos de patrulla en orden. Deben estar sobre el NavMesh y NO ser hijos del enemigo.")]
+    [SerializeField] private Transform[] patrolPoints;
+    [Tooltip("Desactivado: recorre el circuito en bucle (A-B-C-A). Activado: va y vuelve (A-B-C-B-A).")]
+    [SerializeField] private bool pingPong = false;
+    [SerializeField] private float waitAtPoint = 1.5f;                                // pausa en cada punto
+    [SerializeField, Range(0.1f, 1f)] private float patrolSpeedMultiplier = 0.5f;    // fracción de moveSpeed
+    [SerializeField] private float arriveThreshold = 0.5f;                            // distancia para dar el punto por alcanzado
 
     [Header("Visual")]
     [SerializeField] private Color bodyColor = Color.red;
@@ -43,6 +50,12 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
     private float nextRepath;
 
+    // Patrulla
+    private int patrolIndex;
+    private int patrolDir = 1;
+    private bool waiting;
+    private float waitStart, waitUntil;
+
     // Salto
     private bool jumping;
     private float nextJumpTime;
@@ -59,8 +72,6 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-
-        // Si tiene Rigidbody, lo desactivamos para que no se caiga ni se vuelque
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -101,7 +112,17 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         CreateEye();
         coneObj = CreateFan("VisionCone", coneYOffset, coneColor, coneSegments, out coneMesh, out coneVerts);
         alertObj = CreateFan("AlertArea", coneYOffset - 0.02f, alertColor, alertSegments, out alertMesh, out alertVerts);
-        SetState(State.Idle);
+
+        // Con puntos de patrulla empieza patrullando; sin puntos, se queda quieto mirando (Idle)
+        if (patrolPoints != null && patrolPoints.Length > 0)
+        {
+            SetState(State.Patrol);
+            GoToPatrolPoint();
+        }
+        else
+        {
+            SetState(State.Idle);
+        }
 
         GameObject p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) player = p.transform;
@@ -123,6 +144,16 @@ public class EnemyMelee : MonoBehaviour, IDamageable
                     SetState(State.Chase);
                     AlertAllies();
                 }
+                break;
+
+            case State.Patrol:
+                if (CanSeePlayer(dist))
+                {
+                    SetState(State.Chase);
+                    AlertAllies();
+                    break;
+                }
+                UpdatePatrol();
                 break;
 
             case State.Chase:
@@ -156,9 +187,15 @@ public class EnemyMelee : MonoBehaviour, IDamageable
     // Gira de un lado a otro; el cono y la detección siguen hacia dónde mira
     void ScanHead()
     {
+        ScanHeadAt(Time.time * data.headScanSpeed + scanPhase);
+    }
+
+    // Igual que ScanHead pero con la fase del seno elegida (en patrulla empieza en 0 para no dar un salto)
+    void ScanHeadAt(float phase)
+    {
         if (data.headScanAngle <= 0f) return;
 
-        float angle = Mathf.Sin(Time.time * data.headScanSpeed + scanPhase) * data.headScanAngle;
+        float angle = Mathf.Sin(phase) * data.headScanAngle;
         transform.rotation = baseRotation * Quaternion.Euler(0f, angle, 0f);
     }
 
@@ -204,6 +241,80 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         }
 
         return Vector3.ClampMagnitude(push, 1f) * 1.5f;
+    }
+
+    // ---------------- PATRULLA ----------------
+
+    void UpdatePatrol()
+    {
+        if (!agent.isOnNavMesh) return;
+
+        // Esperando en un punto: gira la cabeza de un lado a otro
+        if (waiting)
+        {
+            ScanHeadAt((Time.time - waitStart) * data.headScanSpeed);
+
+            if (Time.time >= waitUntil)
+            {
+                waiting = false;
+                agent.isStopped = false;
+                AdvancePatrolIndex();
+                GoToPatrolPoint();
+            }
+            return;
+        }
+
+        if (agent.pathPending) return;
+
+        // Punto inalcanzable: pasa al siguiente
+        if (agent.pathStatus == NavMeshPathStatus.PathInvalid)
+        {
+            AdvancePatrolIndex();
+            GoToPatrolPoint();
+            return;
+        }
+
+        // Llegó al punto: se detiene y espera
+        if (agent.remainingDistance <= arriveThreshold)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            baseRotation = transform.rotation; // el giro de cabeza parte de hacia donde mira ahora
+            waiting = true;
+            waitStart = Time.time;
+            waitUntil = Time.time + waitAtPoint;
+        }
+    }
+
+    void GoToPatrolPoint()
+    {
+        if (patrolPoints == null || patrolPoints.Length == 0 || !agent.isOnNavMesh) return;
+
+        Vector3 dest = patrolPoints[patrolIndex].position;
+        if (NavMesh.SamplePosition(dest, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            dest = hit.position;
+
+        agent.SetDestination(dest);
+    }
+
+    void AdvancePatrolIndex()
+    {
+        if (patrolPoints.Length <= 1) return;
+
+        if (pingPong)
+        {
+            int next = patrolIndex + patrolDir;
+            if (next < 0 || next >= patrolPoints.Length)
+            {
+                patrolDir = -patrolDir;
+                next = patrolIndex + patrolDir;
+            }
+            patrolIndex = next;
+        }
+        else
+        {
+            patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
+        }
     }
 
     // ---------------- ATASCO ----------------
@@ -451,15 +562,28 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
         if (state == State.Chase) ResetStuckTimer();
 
-        if (coneObj != null)  coneObj.SetActive(state == State.Idle);
-        if (alertObj != null) alertObj.SetActive(state == State.Idle ||
+        // Patrullando camina más lento y se detiene justo sobre el punto (no a distancia de ataque)
+        if (agent != null && agent.enabled)
+        {
+            bool patrolling = state == State.Patrol;
+            agent.speed = patrolling ? data.moveSpeed * patrolSpeedMultiplier : data.moveSpeed;
+            agent.stoppingDistance = patrolling ? 0.1f : data.attackRange * 0.8f;
+
+            // Si estaba parado esperando en un punto, que pueda perseguir
+            if (state == State.Chase && agent.isOnNavMesh) agent.isStopped = false;
+        }
+
+        // El cono y el área de alerta se ven mientras no ha detectado al player
+        bool unaware = state == State.Idle || state == State.Patrol;
+        if (coneObj != null)  coneObj.SetActive(unaware);
+        if (alertObj != null) alertObj.SetActive(unaware ||
                                   (showAlertAreaAlways && state != State.Dead));
     }
 
     // Lo llama otro enemigo que ya vio al player
     public void Alert()
     {
-        if (state == State.Idle) SetState(State.Chase);
+        if (state == State.Idle || state == State.Patrol) SetState(State.Chase);
     }
 
     void AlertAllies()
@@ -469,7 +593,7 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         for (int i = 0; i < allEnemies.Count; i++)
         {
             EnemyMelee other = allEnemies[i];
-            if (other == this || other.state != State.Idle) continue;
+            if (other == this || (other.state != State.Idle && other.state != State.Patrol)) continue;
 
             float d = Vector3.Distance(transform.position, other.transform.position);
             if (d > data.allyAlertRadius) continue;
@@ -649,7 +773,9 @@ public class EnemyMelee : MonoBehaviour, IDamageable
         dir.y = 0f;
         if (dir.sqrMagnitude > 0.001f) transform.rotation = Quaternion.LookRotation(dir);
 
-        // Acá se puede disparar la animación de ataque
+        // El palito hace el movimiento de golpe
+        SendMessage("OnAttackStart", data.attackWindup, SendMessageOptions.DontRequireReceiver);
+
         Invoke(nameof(DealDamage), data.attackWindup);
         Invoke(nameof(EndAttack), data.attackWindup + 0.4f);
     }
@@ -703,8 +829,31 @@ public class EnemyMelee : MonoBehaviour, IDamageable
 
     // ---------------- GIZMOS (se ven al seleccionar al enemigo) ----------------
 
+    void DrawPatrolGizmos()
+    {
+        if (patrolPoints == null || patrolPoints.Length == 0) return;
+
+        Gizmos.color = Color.green;
+        for (int i = 0; i < patrolPoints.Length; i++)
+        {
+            if (patrolPoints[i] == null) continue;
+            Gizmos.DrawWireSphere(patrolPoints[i].position, 0.35f);
+
+            int next = i + 1;
+            if (next >= patrolPoints.Length)
+            {
+                if (pingPong) break;   // ida y vuelta: no cierra el circuito
+                next = 0;              // circuito: vuelve al primero
+            }
+            if (patrolPoints[next] != null)
+                Gizmos.DrawLine(patrolPoints[i].position, patrolPoints[next].position);
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
+        DrawPatrolGizmos();
+
         if (data == null) return;
 
         // Amarillo: rango de visión

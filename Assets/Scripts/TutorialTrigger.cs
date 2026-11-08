@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class TutorialTrigger : MonoBehaviour
 {
-    [SerializeField] private GameObject tutorialPanel;
-    [SerializeField] private bool pauseGame = true;
+    [SerializeField] private TutorialHint hint;
+    [SerializeField] private UIManager uiManager;
     [SerializeField] private bool oneTimeOnly = true;
 
     private bool activated = false;
@@ -15,17 +15,18 @@ public class TutorialTrigger : MonoBehaviour
 
         if (other.CompareTag("Player"))
         {
-            activated = true;
-            tutorialPanel.SetActive(true);
+            Debug.Log("Entró al trigger");
+            uiManager.ShowHint(hint);
             GameManager2.Instance.ChangeState(GameState.Tutorial);
         }
     }
 
-
-    public void CloseTutorial()
+    private void OnTriggerExit(Collider other)
     {
-        tutorialPanel.SetActive(false);
-        GameManager2.Instance.ChangeState(GameState.Playing);
+        if (other.CompareTag("Player"))
+        {
+            uiManager.HideHint();
+            GameManager2.Instance.ChangeState(GameState.Playing);
+        }
     }
-
 }

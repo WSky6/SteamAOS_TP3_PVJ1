@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public enum GameState
 {
@@ -34,19 +35,21 @@ public class GameManager2 : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+        Instance = this;
         DontDestroyOnLoad(gameObject);
     }
 
     private void OnEnable()
     {
+        if (Instance != this) return;
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
         if (pauseAction != null)
         {
             pauseAction.action.Enable();
@@ -56,10 +59,30 @@ public class GameManager2 : MonoBehaviour
 
     private void OnDisable()
     {
+        if (Instance != this) return;
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+
         if (pauseAction != null)
         {
             pauseAction.action.performed -= OnPausePerformed;
             pauseAction.action.Disable();
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Time.timeScale = 1f;
+
+        if (scene.name == "MenuPrincipal")
+        {
+            ChangeState(GameState.Start);
+        }
+        else
+        {
+            enemiesRemaining = totalEnemies;
+            OnEnemyChange?.Invoke(enemiesRemaining);
+            ChangeState(GameState.Playing);
         }
     }
 
@@ -69,11 +92,18 @@ public class GameManager2 : MonoBehaviour
 
         OnEnemyChange?.Invoke(enemiesRemaining);
         ChangeState(GameState.Playing);
+
+        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
     }
 
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
+        Debug.Log("PAUSA: tecla detectada");
+        Debug.Log("Estado actual: " + currentState);
+
         Paused();
+
+        Debug.Log("Estado posterior: " + currentState);
     }
 
     public void ChangeState(GameState newState)
