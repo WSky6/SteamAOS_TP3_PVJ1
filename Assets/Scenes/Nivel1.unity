@@ -8763,7 +8763,9 @@ PrefabInstance:
       value: 0.23529412
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6111563175414414917, guid: f8fa375b8d65ada4499d21220bb6e1aa, type: 3}
+    - {fileID: 1403946358623994396, guid: f8fa375b8d65ada4499d21220bb6e1aa, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f8fa375b8d65ada4499d21220bb6e1aa, type: 3}
@@ -8819,7 +8821,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -14.685059, y: -3.208908}
+  m_AnchoredPosition: {x: -14.685059, y: -3.2089233}
   m_SizeDelta: {x: 81.5756, y: 58.3379}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &683588769
@@ -9357,7 +9359,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e89a0e7279e28862daeb7f2a2f915813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  playerStats: {fileID: 0}
+  playerStats: {fileID: 11400000, guid: d9c6405e5ef869c49ad10e980d827fcb, type: 2}
   shotsToDie: 3
   onDiedUnityEvent:
     m_PersistentCalls:
