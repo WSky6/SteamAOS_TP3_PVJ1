@@ -273,6 +273,8 @@ public class EnemyBoss : MonoBehaviour, IDamageable
         // TODO: avisar al GameManager para sumar los puntos
         Debug.Log($"{name} murió (+{data.points} puntos)");
         Destroy(gameObject, 0.5f);
+
+        GameManager2.Instance.ChangeState(GameState.Victory);
     }
 
     // Para probar sin script de disparo: clic derecho en el título del componente (en Play)

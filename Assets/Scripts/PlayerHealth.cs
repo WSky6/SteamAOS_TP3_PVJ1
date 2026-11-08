@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 // ============================================================================
 //  VIDA DEL PLAYER   <-- ACÁ SE MANEJA LA VIDA (para quien haga el HUD)
@@ -32,6 +33,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [Header("Vida")]
     [SerializeField] private PlayerStats playerStats;
     [SerializeField] private int shotsToDie = 3;
+    [SerializeField] private string firstLevelScene = "Nivel1";
 
     [Header("Game over (lo maneja otro script)")]
     [SerializeField] private UnityEvent onDiedUnityEvent;
@@ -52,11 +54,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     void Awake()
     {
-        health = playerStats.currentHealth;
+        bool isFirstLevel = SceneManager.GetActiveScene().name == firstLevelScene;
+        bool wasDead = playerStats.currentHealth <= 0f;
+        if (isFirstLevel || wasDead)
+            playerStats.currentHealth = playerStats.maxHealth;
     }
 
     void Start()
     {
+        Debug.Log($"Vida inicial: {playerStats.currentHealth}/{playerStats.maxHealth}");
         OnHealthChanged?.Invoke(playerStats.currentHealth, playerStats.maxHealth);
     }
 

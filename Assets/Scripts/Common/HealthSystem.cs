@@ -25,6 +25,14 @@ public class HealthSystem : MonoBehaviour
     private MeshRenderer mesh;
 
     public event Action<float> OnChangeHealthPlayer;
+
+    private void Start()
+    {
+        if (gameObject.CompareTag("Player"))
+        {
+            OnChangeHealthPlayer?.Invoke(playerStats.currentHealth);
+        }
+    }
     private void Awake()
     {
         isDead = false;
