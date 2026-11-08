@@ -19,7 +19,7 @@ public class UIManager : MonoBehaviour
     private bool subscribed;
 
     //referencia healthsystem
-    [SerializeField] private HealthSystem healthSystemPlayer;
+    [SerializeField] private PlayerHealth healthSystemPlayer;
     //suscripciones estado y vida jugador
     //on destroy y start
 
@@ -38,7 +38,7 @@ public class UIManager : MonoBehaviour
         subscribed = false;
 
         if (healthSystemPlayer != null)
-            healthSystemPlayer.OnChangeHealthPlayer -= UpdateBar;
+            healthSystemPlayer.OnHealthChanged -= UpdateBar;
     }
 
     private void Start()
@@ -72,7 +72,7 @@ public class UIManager : MonoBehaviour
         }
 
         if (healthSystemPlayer != null)
-            healthSystemPlayer.OnChangeHealthPlayer += UpdateBar;
+            healthSystemPlayer.OnHealthChanged += UpdateBar;
     }
 
     
@@ -87,7 +87,7 @@ public class UIManager : MonoBehaviour
 
         if (healthSystemPlayer != null)
         {
-            healthSystemPlayer.OnChangeHealthPlayer -= UpdateBar;
+            healthSystemPlayer.OnHealthChanged -= UpdateBar;
         }
     }
 
@@ -131,6 +131,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public void DeadChange()
+    {
+        GameManager2.Instance.ChangeState(GameState.GameOver);
+    }
+
 
     //metodos para las suscripciones
 
@@ -144,10 +149,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void UpdateBar(float health)
+    private void UpdateBar(float health, float maxHealth)
     {
         if (sliderBar != null)
         {
+            sliderBar.maxValue = maxHealth;
             sliderBar.value = health;
         }
     }

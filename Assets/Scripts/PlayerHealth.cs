@@ -30,7 +30,7 @@ using UnityEngine.Events;
 public class PlayerHealth : MonoBehaviour, IDamageable
 {
     [Header("Vida")]
-    [SerializeField] private float maxHealth = 100f;
+    [SerializeField] private PlayerStats playerStats;
     [SerializeField] private int shotsToDie = 3;
 
     [Header("Game over (lo maneja otro script)")]
@@ -39,9 +39,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private float health;
     private bool dead;
 
-    public float Current => health;
-    public float Max => maxHealth;
-    public float Percent => maxHealth > 0f ? health / maxHealth : 0f;
+    public float Current => playerStats.currentHealth;
+    public float Max => playerStats.maxHealth;
+    public float Percent =>
+    playerStats.maxHealth > 0f
+    ? playerStats.currentHealth / playerStats.maxHealth
+    : 0f;
     public bool IsDead => dead;
 
     public event System.Action<float, float> OnHealthChanged; // (vida actual, vida máxima)
@@ -49,39 +52,55 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     void Awake()
     {
-        health = maxHealth;
+        health = playerStats.currentHealth;
     }
 
     void Start()
     {
-        OnHealthChanged?.Invoke(health, maxHealth);
+        OnHealthChanged?.Invoke(playerStats.currentHealth, playerStats.maxHealth);
     }
 
     // Lo llaman las balas enemigas: saca 1/3 de la vida (shotsToDie disparos y muere)
     public void TakeShot()
     {
-        TakeDamage(maxHealth / Mathf.Max(1, shotsToDie) + 0.01f);
+        TakeDamage(playerStats.maxHealth / Mathf.Max(1, shotsToDie) + 0.01f);
     }
-
     // Daño genérico (IDamageable): lo usan los golpes melee y las zonas de muerte
     public void TakeDamage(float amount)
     {
         if (dead) return;
 
-        health = Mathf.Max(0f, health - amount);
-        Debug.Log($"Player recibió {amount} de daño. Vida: {health}/{maxHealth}");
+        playerStats.currentHealth =
+            Mathf.Max(0f, playerStats.currentHealth - amount);
 
-        OnHealthChanged?.Invoke(health, maxHealth);
+        Debug.Log(
+            $"Player recibió {amount} de daño. Vida: " +
+            $"{playerStats.currentHealth}/{playerStats.maxHealth}"
+        );
 
-        if (health <= 0f) Die();
+        OnHealthChanged?.Invoke(
+            playerStats.currentHealth,
+            playerStats.maxHealth
+        );
+
+        if (playerStats.currentHealth <= 0f)
+            Die();
     }
 
     public void Heal(float amount)
     {
         if (dead) return;
 
-        health = Mathf.Min(maxHealth, health + amount);
-        OnHealthChanged?.Invoke(health, maxHealth);
+        playerStats.currentHealth =
+            Mathf.Min(
+                playerStats.maxHealth,
+                playerStats.currentHealth + amount
+            );
+
+        OnHealthChanged?.Invoke(
+            playerStats.currentHealth,
+            playerStats.maxHealth
+        );
     }
 
     // ---------------- MUERTE ----------------

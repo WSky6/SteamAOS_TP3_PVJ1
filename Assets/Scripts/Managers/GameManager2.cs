@@ -33,6 +33,8 @@ public class GameManager2 : MonoBehaviour
     public event Action<GameState> OnChangeState;
     public event Action<int> OnEnemyChange;
 
+    [SerializeField] private PlayerStats playerStats;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -180,6 +182,8 @@ public class GameManager2 : MonoBehaviour
         Time.timeScale = 1f;
 
         enemiesRemaining = totalEnemies;
+
+        playerStats.ResetStats();
 
         ChangeState(GameState.Start);
 

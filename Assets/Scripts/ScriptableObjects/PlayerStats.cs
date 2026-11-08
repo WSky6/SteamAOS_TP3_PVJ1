@@ -10,7 +10,7 @@ public class PlayerStats : ScriptableObject
     public float maxHealth = 100f;
 
     [HideInInspector]
-    public float currentHealth;
+    public float currentHealth = 100f;
 
     [Header("Movement")]
     public float moveSpeed = 5f;
