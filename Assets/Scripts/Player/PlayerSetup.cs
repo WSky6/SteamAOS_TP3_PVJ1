@@ -6,7 +6,7 @@ public class PlayerSetup : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Init()
     {
-        if (FindFirstObjectByType<PlayerSetup>() != null) return;
+        if (FindAnyObjectByType<PlayerSetup>() != null) return;
 
         GameObject go = new GameObject("PlayerSetup");
         DontDestroyOnLoad(go);

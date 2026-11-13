@@ -30,10 +30,10 @@ public class UIManager : MonoBehaviour
 
     private void OnDisable()
     {
-        if (GameManager2.Instance != null)
+        if (GameManager.Instance != null)
         {
-            GameManager2.Instance.OnChangeState -= StateChage;
-            GameManager2.Instance.OnEnemyChange -= UpdateEnemiesHUD;
+            GameManager.Instance.OnChangeState -= StateChage;
+            GameManager.Instance.OnEnemyChange -= UpdateEnemiesHUD;
         }
         subscribed = false;
 
@@ -51,18 +51,18 @@ public class UIManager : MonoBehaviour
             volumeSlider.value = volume;
 
         // Sincronizar con el estado actual por si nos perdimos el evento
-        if (GameManager2.Instance != null)
-            StateChage(GameManager2.Instance.CurrentState);
+        if (GameManager.Instance != null)
+            StateChage(GameManager.Instance.CurrentState);
     }
 
     private void Subscribe()
     {
         if (subscribed) return;
 
-        if (GameManager2.Instance != null)
+        if (GameManager.Instance != null)
         {
-            GameManager2.Instance.OnChangeState += StateChage;
-            GameManager2.Instance.OnEnemyChange += UpdateEnemiesHUD;
+            GameManager.Instance.OnChangeState += StateChage;
+            GameManager.Instance.OnEnemyChange += UpdateEnemiesHUD;
             subscribed = true;
             Debug.Log("UIManager suscrito a GameManager2 en " + SceneManager.GetActiveScene().name);
         }
@@ -79,10 +79,10 @@ public class UIManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (GameManager2.Instance != null)
+        if (GameManager.Instance != null)
         {
-            GameManager2.Instance.OnChangeState -= StateChage;
-            GameManager2.Instance.OnEnemyChange -= UpdateEnemiesHUD;
+            GameManager.Instance.OnChangeState -= StateChage;
+            GameManager.Instance.OnEnemyChange -= UpdateEnemiesHUD;
         }
 
         if (healthSystemPlayer != null)
@@ -133,7 +133,7 @@ public class UIManager : MonoBehaviour
 
     public void DeadChange()
     {
-        GameManager2.Instance.ChangeState(GameState.GameOver);
+        GameManager.Instance.ChangeState(GameState.GameOver);
     }
 
 
@@ -179,7 +179,7 @@ public class UIManager : MonoBehaviour
 
     public void UntogglePause()
     {
-        GameManager2.Instance.ChangeState(GameState.Playing);
+        GameManager.Instance.ChangeState(GameState.Playing);
     }
 
     public void TogglePanel(GameObject panel)
@@ -225,7 +225,7 @@ public class UIManager : MonoBehaviour
     public void ReturnToMainMenu(string sceneName)
     {
         Time.timeScale = 1f;
-        GameManager2.Instance.ResetGame();
+        GameManager.Instance.ResetGame();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         SceneManager.LoadScene(sceneName);
@@ -250,7 +250,7 @@ public class UIManager : MonoBehaviour
         if (tutorialPanel != null)
         {
             tutorialPanel.SetActive(false);
-            GameManager2.Instance.ChangeState(GameState.Playing);
+            GameManager.Instance.ChangeState(GameState.Playing);
         }
     }
 }

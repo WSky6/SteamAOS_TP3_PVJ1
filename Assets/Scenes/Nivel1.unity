@@ -8821,7 +8821,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -14.685059, y: -3.2089233}
+  m_AnchoredPosition: {x: -14.685028, y: -3.2089233}
   m_SizeDelta: {x: 81.5756, y: 58.3379}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &683588769
@@ -9361,6 +9361,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   playerStats: {fileID: 11400000, guid: d9c6405e5ef869c49ad10e980d827fcb, type: 2}
   shotsToDie: 3
+  firstLevelScene: Nivel1
   onDiedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -29448,7 +29449,7 @@ GameObject:
   - component: {fileID: 2001254626}
   - component: {fileID: 2001254627}
   m_Layer: 0
-  m_Name: GameManager2
+  m_Name: GameManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
