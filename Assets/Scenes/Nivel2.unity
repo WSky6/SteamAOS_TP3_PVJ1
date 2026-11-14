@@ -5991,6 +5991,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   playerStats: {fileID: 11400000, guid: d9c6405e5ef869c49ad10e980d827fcb, type: 2}
   shotsToDie: 3
+  firstLevelScene: Nivel1
   onDiedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -15757,7 +15758,7 @@ MonoBehaviour:
   textMesh: {fileID: 0}
   sliderBar: {fileID: 1946843019}
   volumeSlider: {fileID: 0}
-  mainMixer: {fileID: 0}
+  mainMixer: {fileID: 24100000, guid: 62b25751594b8d94d837a6022d9a2dc0, type: 2}
   tutorialPanel: {fileID: 313719836}
   tutorialText: {fileID: 1169345202}
   healthSystemPlayer: {fileID: 546403291}
