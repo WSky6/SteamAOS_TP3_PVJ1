@@ -17,7 +17,7 @@ public class TutorialTrigger : MonoBehaviour
         {
             Debug.Log("Entró al trigger");
             uiManager.ShowHint(hint);
-            GameManager2.Instance.ChangeState(GameState.Tutorial);
+            GameManager.Instance.ChangeState(GameState.Tutorial);
         }
     }
 
@@ -26,7 +26,7 @@ public class TutorialTrigger : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             uiManager.HideHint();
-            GameManager2.Instance.ChangeState(GameState.Playing);
+            GameManager.Instance.ChangeState(GameState.Playing);
         }
     }
 }

@@ -76,11 +76,11 @@ public class HealthSystem : MonoBehaviour
 
         if (gameObject.CompareTag("Player"))
         {
-            GameManager2.Instance.NotifyPlayerDead();
+            GameManager.Instance.NotifyPlayerDead();
         }
         else if (gameObject.CompareTag("Character"))
         {
-            GameManager2.Instance.NotifyEnemyDefeat();
+            GameManager.Instance.NotifyEnemyDefeat();
         }
 
         vfx.SetActive(true);

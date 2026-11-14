@@ -13,9 +13,9 @@ public enum GameState
     GameOver,
 }
 
-public class GameManager2 : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
-    public static GameManager2 Instance { get; private set; }
+    public static GameManager Instance { get; private set; }
 
     [Header("State Settings")]
     [SerializeField] private GameState currentState;
