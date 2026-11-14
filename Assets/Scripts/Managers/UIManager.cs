@@ -96,32 +96,33 @@ public class UIManager : MonoBehaviour
 
     private void StateChage(GameState newState)
     {
+        Debug.Log("UIManager recibido estado: " + newState + " en escena: " + SceneManager.GetActiveScene().name);
 
-        if (SceneManager.GetActiveScene().name == "MenuPrincipal")
-        return;
-        Debug.Log("UIManager recibido estado: " + newState);
-  
         if (PausePanel != null) PausePanel.SetActive(false);
-
-        VictoryPanel.SetActive(false);
-        GameOverPanel.SetActive(false);
-
+        if (VictoryPanel != null) VictoryPanel.SetActive(false);
+        if (GameOverPanel != null) GameOverPanel.SetActive(false);
+        bool isMenu = VictoryPanel == null && GameOverPanel == null;
+        if (isMenu)
+        {
+            UnlockCursor();
+            return;
+        }
 
         switch (newState)
         {
             case GameState.Paused:
-                PausePanel.SetActive(true);
+                if (PausePanel != null) PausePanel.SetActive(true);
                 UnlockCursor();
                 break;
             case GameState.Tutorial:
                 UnlockCursor();
                 break;
             case GameState.Victory:
-                VictoryPanel.SetActive(true);
+                if (VictoryPanel != null) VictoryPanel.SetActive(true);
                 UnlockCursor();
                 break;
             case GameState.GameOver:
-                GameOverPanel.SetActive(true);
+                if (GameOverPanel != null) GameOverPanel.SetActive(true);
                 UnlockCursor();
                 break;
             case GameState.Playing:
