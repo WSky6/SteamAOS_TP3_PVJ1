@@ -21258,7 +21258,7 @@ MonoBehaviour:
   textMesh: {fileID: 0}
   sliderBar: {fileID: 682280131}
   volumeSlider: {fileID: 0}
-  mainMixer: {fileID: 0}
+  mainMixer: {fileID: 24100000, guid: 62b25751594b8d94d837a6022d9a2dc0, type: 2}
   tutorialPanel: {fileID: 683588767}
   tutorialText: {fileID: 869902232}
   healthSystemPlayer: {fileID: 701143982}
